@@ -15,7 +15,8 @@ pipeline {
         SSH_CREDS_ID    = 'ec2-ssh-key'
         
         // Deployment Server Details
-        WORKER_IP = "44.198.60.66"
+        DEV_SERVER_IP = "3.238.188.223"
+        DEV_SERVER_USER = "ubuntu"
     }
 
     stages {
@@ -60,11 +61,16 @@ pipeline {
                                 docker rm laxya-portfolio || true
                                 
                                 # Run the new container
-                                docker run -d \
+                                # Run the new container
+                                if ! docker run -d \
                                     --name laxya-portfolio \
                                     -p 80:3000 \
                                     --restart unless-stopped \
-                                    ${IMAGE_NAME}:${IMAGE_TAG}
+                                    ${IMAGE_NAME}:${IMAGE_TAG}; then
+                                   echo "Deployment Failed! Deleting image to save space..."
+                                   docker rmi ${IMAGE_NAME}:${IMAGE_TAG}
+                                   exit 1
+                                fi
                             '
                         """
                     }
@@ -76,7 +82,10 @@ pipeline {
     post {
         always {
             // Logout from Docker to clean up
+            // Logout and clean up images to save disk space
             sh "docker logout ${DOCKER_REGISTRY}"
+            sh "docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true"
+            sh "docker rmi ${IMAGE_NAME}:latest || true"
             echo 'Pipeline completed.'
         }
         success {
