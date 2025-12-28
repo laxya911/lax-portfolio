@@ -11,8 +11,8 @@ pipeline {
         IMAGE_TAG       = "v1.0.${BUILD_NUMBER}" 
         
         // Credentials IDs (Must likely be created in Jenkins)
-        DOCKER_CREDS_ID = 'docker-hub-credentials'
-        SSH_CREDS_ID    = 'dev-server-ssh'
+        DOCKER_CREDS_ID = 'docker-id'
+        SSH_CREDS_ID    = 'ec2-ssh-key'
         
         // Deployment Server Details
         WORKER_IP = "44.198.60.66"
@@ -62,7 +62,7 @@ pipeline {
                                 # Run the new container
                                 docker run -d \
                                     --name laxya-portfolio \
-                                    -p 3000:3000 \
+                                    -p 80:3000 \
                                     --restart unless-stopped \
                                     ${IMAGE_NAME}:${IMAGE_TAG}
                             '
