@@ -62,6 +62,21 @@ Since Nexus is running on HTTP (not HTTPS), all servers interacting with it must
 1.  **Security Group**: Open Custom TCP Port **30080** on the Dev Server (`98.92.203.102`).
     *   This allows you to access the app via `http://98.92.203.102:30080`.
 
+### K8s Troubleshooting: Disk Full (Pending Pods)
+If your pods are stuck in **Pending** due to `DiskPressure`:
+1.  **AWS Console**: Select the Volume -> Actions -> Modify Volume -> Increase to 20GB.
+2.  **SSH into Server** and expand the partition:
+    ```bash
+    # 1. Expand the partition (Note the space between xvda and 1)
+    sudo growpart /dev/xvda 1
+    
+    # 2. Resize the filesystem (Ubuntu uses ext4 usually)
+    sudo resize2fs /dev/xvda1
+    
+    # 3. Verify
+    df -h
+    ```
+
 ## Phase 3: Kubernetes Setup (Required)
 Since you don't have a cluster yet, we will install **K3s** (Lightweight Kubernetes) on your Dev Server (`98.92.203.102`).
 
