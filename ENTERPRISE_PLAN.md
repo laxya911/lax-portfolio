@@ -42,7 +42,67 @@ Transform the current simple CI/CD setup into a secure, scalable, enterprise-gra
 *Recommendation*: Use Ansible for **provisioning** the K8s cluster or configuring the worker nodes (installing Docker, Kubelet), NOT for deploying the app artifact (K8s does this better).
 - We will add a sample playbook for server bootstrapping if requested, but keep the CI/CD focused on K8s manifests.
 
+## Critical Infrastructure Checklist (Completed Phase 1 & 2)
+### Nexus Registry Setup
+1.  **Security Group**: Open Custom TCP Port **8082** on the Nexus/Jenkins Server (Source: VPC CIDR or All).
+2.  **Nexus Container**: Must expose the connector port: `-p 8082:8082`.
+3.  **Private IP**: Use the **Private IP** (`172.31.78.13`) in Jenkinsfile to avoid AWS Hairpin NAT timeouts.
+
+### Docker Daemon Configuration (`/etc/docker/daemon.json`)
+Since Nexus is running on HTTP (not HTTPS), all servers interacting with it must whitelist it.
+**On Jenkins Server & Dev Server:**
+```json
+{
+  "insecure-registries" : ["172.31.78.13:8082"]
+}
+```
+*Restart Docker (`sudo systemctl restart docker`) after editing.*
+
+### Kubernetes App Access
+1.  **Security Group**: Open Custom TCP Port **30080** on the Dev Server (`98.92.203.102`).
+    *   This allows you to access the app via `http://98.92.203.102:30080`.
+
+## Phase 3: Kubernetes Setup (Required)
+Since you don't have a cluster yet, we will install **K3s** (Lightweight Kubernetes) on your Dev Server (`98.92.203.102`).
+
+### 1. Install K3s (On Dev Server)
+SSH into your Dev Server and run:
+```bash
+curl -sfL https://get.k3s.io | sh -
+# Verify installation
+sudo k3s kubectl get nodes
+```
+
+### 2. Configure K3s for Nexus (Insecure Registry)
+K3s does **NOT** use `daemon.json`. You must create a separate config to allow HTTP images.
+Create/Edit `/etc/rancher/k3s/registries.yaml`:
+```yaml
+mirrors:
+  "172.31.78.13:8082":
+    endpoint:
+      - "http://172.31.78.13:8082"
+```
+*Restart K3s:* `sudo systemctl restart k3s`
+
+### 3. Allow Jenkins to access Kubeconfig
+To allow the `ubuntu` user (which Jenkins SSH uses) to run `kubectl`:
+```bash
+sudo chmod 644 /etc/rancher/k3s/k3s.yaml
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+# Add to .bashrc to make it permanent for 'ubuntu' user:
+echo "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml" >> ~/.bashrc
+```
+
+### 4. Create Pull Secret
+K8s needs credentials to login to Nexus. Run this on the Dev Server:
+```bash
+sudo k3s kubectl create secret docker-registry nexus-credentials \
+  --docker-server=172.31.78.13:8082 \
+  --docker-username=admin \
+  --docker-password=<YOUR_NEXUS_PASSWORD>
+```
+
 ## Verification Plan
-1.  **Build**: Verify image pushes to Nexus.
-2.  **Scan**: Verify Trivy generates a security report (and optionally fails build on Critical / High severity).
+1.  **Build**: Verify image pushes to Nexus. (DONE)
+2.  **Scan**: Verify Trivy generates a security report. (DONE)
 3.  **Deploy**: Verify pods are running in K8s (`kubectl get pods`).

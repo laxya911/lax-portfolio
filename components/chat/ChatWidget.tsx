@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Sparkles, X, Send } from "lucide-react"
+import { Headset, X, Send, Bot } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
@@ -28,21 +28,32 @@ export function ChatWidget() {
 
   return (
     <>
-      <div className="fixed bottom-6 right-6 z-[100]">
+      <div className="fixed bottom-6 right-6 z-[50] flex flex-col items-end gap-2">
         <AnimatePresence>
           {isOpen && (
             <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-              className="mb-4 w-[350px]"
+              initial={{ opacity: 0, scale: 0.8, y: 20, transformOrigin: "bottom right" }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: 20 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="mb-2 w-[350px] sm:w-[380px]"
             >
-              <Card className="shadow-2xl border-primary/20">
+              <Card className="shadow-2xl border-primary/20 bg-background/95 backdrop-blur-sm">
                 <CardHeader className="flex flex-row items-center justify-between pb-4 space-y-0 bg-primary text-primary-foreground rounded-t-xl py-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                    <CardTitle className="text-sm font-medium">Assistant</CardTitle>
+                  <div className="flex items-center gap-3">
+                    <div className="p-1.5 bg-white/10 rounded-full">
+                        <Bot className="h-5 w-5" />
+                    </div>
+                    <div>
+                        <CardTitle className="text-sm font-medium">Virtual Assistant</CardTitle>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                            </span>
+                            <span className="text-[10px] text-primary-foreground/90">Online</span>
+                        </div>
+                    </div>
                   </div>
                   <Button 
                     variant="ghost" 
@@ -53,13 +64,13 @@ export function ChatWidget() {
                     <X className="h-4 w-4" />
                   </Button>
                 </CardHeader>
-                <CardContent className="h-[300px] overflow-y-auto p-4 space-y-4">
+                <CardContent className="h-[350px] overflow-y-auto p-4 space-y-4">
                     {messages.map((msg, i) => (
                         <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                            <div className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
                                 msg.role === 'user' 
-                                ? 'bg-primary text-primary-foreground' 
-                                : 'bg-muted'
+                                ? 'bg-primary text-primary-foreground rounded-br-none' 
+                                : 'bg-muted rounded-bl-none'
                             }`}>
                                 {msg.content}
                             </div>
@@ -75,9 +86,9 @@ export function ChatWidget() {
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Type a message..." 
-                            className="flex-1"
+                            className="flex-1 focus-visible:ring-primary/50"
                         />
-                        <Button type="submit" size="icon" disabled={!input.trim()}>
+                        <Button type="submit" size="icon" disabled={!input.trim()} className="shrink-0">
                             <Send className="h-4 w-4" />
                         </Button>
                     </form>
@@ -87,16 +98,24 @@ export function ChatWidget() {
           )}
         </AnimatePresence>
         
-        {!isOpen && (
+        <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+        >
             <Button
-            onClick={() => setIsOpen(true)}
-            size="lg"
-            className="h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90 flex items-center justify-center shrink-0"
+            onClick={() => setIsOpen(!isOpen)}
+            variant={isOpen ? "destructive" : "default"}
+            size="icon"
+            className={`h-14 w-14 rounded-full shadow-lg flex items-center justify-center shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-90' : ''}`}
             >
-            <Sparkles className="h-7 w-7 text-white" />
-            <span className="sr-only">Open AI Assistant</span>
+            {isOpen ? (
+                 <X className="h-6 w-6" />
+            ) : (
+                <Headset className="h-7 w-7" />
+            )}
+            <span className="sr-only">Toggle Support Chat</span>
             </Button>
-        )}
+        </motion.div>
       </div>
     </>
   )

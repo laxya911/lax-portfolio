@@ -3,7 +3,8 @@ pipeline {
 
     environment {
         // --- CONFIGURATION ---
-        // Use Private IP to avoid Loopback/Hairpin NAT issues on AWS
+        // CRITICAL: Use Private IP (x.x.x.x) to avoid AWS Loopback/Hairpin NAT issues.
+        // If you use Public IP, the connection might time out from inside the EC2 instance.
         DOCKER_REGISTRY = '172.31.78.13:8082' 
         DOCKER_REPO     = 'laxya-portfolio' // Image Name in Nexus
         IMAGE_NAME      = "${DOCKER_REGISTRY}/${DOCKER_REPO}"
@@ -13,7 +14,7 @@ pipeline {
         
         // Credentials IDs
         DOCKER_CREDS_ID = 'nexus-credentials' // ID for Nexus Username/Password in Jenkins
-        SSH_CREDS_ID    = 'ec2-ssh-key'
+        SSH_CREDS_ID    = 'ec2-ssh-key' // ID for SSH Key to access Dev Server
         
         // Deployment Server Details
         DEV_SERVER_IP = "98.92.203.102"
@@ -25,7 +26,10 @@ pipeline {
             steps {
                 script {
                     echo "Scanning Source Code..."
-                    // Download and install Trivy binary locally to avoid volume mapping issues mechanism
+                    echo "Scanning Source Code..."
+                    // CRITICAL: We download the Trivy binary directly.
+                    // Running 'docker run -v $PWD:...' fails because we are inside a container (Jenkins).
+                    // This 'Sibling Container' issue prevents mounting the workspace volume correctly.
                     sh "curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b ."
                     
                     // Run Trivy FS scan usage local binary
@@ -61,7 +65,8 @@ pipeline {
                     echo "Pushing Docker Image to Registry..."
                     // Login to Docker Hub/Registry
                     withCredentials([usernamePassword(credentialsId: DOCKER_CREDS_ID, passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
-                        // Use single quotes to prevent Groovy from interpolating the secret (avoiding the warning)
+                        // CRITICAL: Use SINGLE QUOTES ('') to prevent Groovy from interpreting $DOCKER_PASS.
+                        // This allows the shell to handle the secret safely without leaking it in logs.
                         sh 'echo $DOCKER_PASS | docker login ${DOCKER_REGISTRY} -u $DOCKER_USER --password-stdin'
                         sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
                         // Also push 'latest' tag for convenience (optional)
@@ -75,28 +80,28 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    echo "Deploying to Development Server..."
+                    echo "Deploying to Development Server (Kubernetes)..."
                     sshagent(credentials: [SSH_CREDS_ID]) {
+                        // 1. Transfer K8s manifests to the server
+                        // We use 'scp' (Secure Copy) to put the files on the server
+                        sh "scp -o StrictHostKeyChecking=no -r k8s/ ${DEV_SERVER_USER}@${DEV_SERVER_IP}:/home/${DEV_SERVER_USER}/"
+                        
+                        // 2. Apply the manifests using kubectl
                         sh """
                             ssh -o StrictHostKeyChecking=no ${DEV_SERVER_USER}@${DEV_SERVER_IP} '
-                                # Pull the specific version
-                                docker pull ${IMAGE_NAME}:${IMAGE_TAG}
+                                # Ensure KUBECONFIG is set (if not already in .bashrc)
+                                export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
                                 
-                                # Stop and remove existing container (if any)
-                                docker stop laxya-portfolio || true
-                                docker rm laxya-portfolio || true
+                                # Apply the manifests
+                                # This will create/update the Deployment and Service
+                                kubectl apply -f /home/${DEV_SERVER_USER}/k8s/
                                 
-                                # Run the new container
-                                # Run the new container
-                                if ! docker run -d \
-                                    --name laxya-portfolio \
-                                    -p 80:3000 \
-                                    --restart unless-stopped \
-                                    ${IMAGE_NAME}:${IMAGE_TAG}; then
-                                   echo "Deployment Failed! Deleting image to save space..."
-                                   docker rmi ${IMAGE_NAME}:${IMAGE_TAG}
-                                   exit 1
-                                fi
+                                # Force a rollout restart to pick up the new image version
+                                # (Since the tag might be 'latest' or specific, this ensures rotation)
+                                kubectl rollout restart deployment/laxya-portfolio
+                                
+                                # Verify status
+                                kubectl get pods
                             '
                         """
                     }
