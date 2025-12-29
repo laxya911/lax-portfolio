@@ -24,9 +24,11 @@ pipeline {
             steps {
                 script {
                     echo "Scanning Source Code..."
-                    // Run Trivy FS scan on current directory
-                    // exit-code 1 exits script if vulnerabilities found (optional: set to 0 to just report)
-                    sh "docker run --rm -v $PWD:/root/app -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy fs /root/app --severity HIGH,CRITICAL" 
+                    // Download and install Trivy binary locally to avoid volume mapping issues mechanism
+                    sh "curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b ."
+                    
+                    // Run Trivy FS scan usage local binary
+                    sh "./trivy fs . --severity HIGH,CRITICAL"
                 }
             }
         }
@@ -46,8 +48,8 @@ pipeline {
             steps {
                 script {
                     echo "Scanning Docker Image..."
-                    // Run Trivy Image scan
-                    sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image ${IMAGE_NAME}:${IMAGE_TAG} --severity HIGH,CRITICAL"
+                    // Use the locally installed trivy binary
+                    sh "./trivy image ${IMAGE_NAME}:${IMAGE_TAG} --severity HIGH,CRITICAL"
                 }
             }
         }
