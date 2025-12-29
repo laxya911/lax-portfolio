@@ -3,7 +3,8 @@ pipeline {
 
     environment {
         // --- CONFIGURATION ---
-        DOCKER_REGISTRY = '3.238.188.223:8082' // Nexus Registry URL
+        // Use Private IP to avoid Loopback/Hairpin NAT issues on AWS
+        DOCKER_REGISTRY = '172.31.78.13:8082' 
         DOCKER_REPO     = 'laxya-portfolio' // Image Name in Nexus
         IMAGE_NAME      = "${DOCKER_REGISTRY}/${DOCKER_REPO}"
         APP_NAME = "laxya-portfolio"
