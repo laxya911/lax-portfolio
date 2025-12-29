@@ -60,7 +60,8 @@ pipeline {
                     echo "Pushing Docker Image to Registry..."
                     // Login to Docker Hub/Registry
                     withCredentials([usernamePassword(credentialsId: DOCKER_CREDS_ID, passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
-                        sh "echo $DOCKER_PASS | docker login ${DOCKER_REGISTRY} -u $DOCKER_USER --password-stdin"
+                        // Use single quotes to prevent Groovy from interpolating the secret (avoiding the warning)
+                        sh 'echo $DOCKER_PASS | docker login ${DOCKER_REGISTRY} -u $DOCKER_USER --password-stdin'
                         sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
                         // Also push 'latest' tag for convenience (optional)
                         sh "docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest"
