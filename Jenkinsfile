@@ -3,29 +3,51 @@ pipeline {
 
     environment {
         // --- CONFIGURATION ---
-        DOCKER_REGISTRY = 'docker.io' // Or your private registry URL
-        DOCKER_REPO     = 'laxya911/laxya-portfolio' // Change to your username/repo
+        DOCKER_REGISTRY = '3.238.188.223:8082' // Nexus Registry URL
+        DOCKER_REPO     = 'laxya-portfolio' // Image Name in Nexus
         IMAGE_NAME      = "${DOCKER_REGISTRY}/${DOCKER_REPO}"
         APP_NAME = "laxya-portfolio"
         // Versioning: v1.0.<BuildNumber>
         IMAGE_TAG       = "v1.0.${BUILD_NUMBER}" 
         
-        // Credentials IDs (Must likely be created in Jenkins)
-        DOCKER_CREDS_ID = 'docker-id'
+        // Credentials IDs
+        DOCKER_CREDS_ID = 'nexus-credentials' // ID for Nexus Username/Password in Jenkins
         SSH_CREDS_ID    = 'ec2-ssh-key'
         
         // Deployment Server Details
-        DEV_SERVER_IP = "3.238.188.223"
+        DEV_SERVER_IP = "98.92.203.102"
         DEV_SERVER_USER = "ubuntu"
     }
 
     stages {
+        stage('Security Scan (FS)') {
+            steps {
+                script {
+                    echo "Scanning Source Code..."
+                    // Run Trivy FS scan on current directory
+                    // exit-code 1 exits script if vulnerabilities found (optional: set to 0 to just report)
+                    sh "docker run --rm -v $PWD:/root/app -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy fs /root/app --severity HIGH,CRITICAL" 
+                }
+            }
+        }
+
         stage('Build') {
             steps {
                 script {
                     echo "Building Docker Image: ${IMAGE_NAME}:${IMAGE_TAG}"
                     // Build with the unique version tag
+                    // Note: 'next build' inside Dockerfile performs linting by default
                     sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                }
+            }
+        }
+
+        stage('Security Scan (Image)') {
+            steps {
+                script {
+                    echo "Scanning Docker Image..."
+                    // Run Trivy Image scan
+                    sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image ${IMAGE_NAME}:${IMAGE_TAG} --severity HIGH,CRITICAL"
                 }
             }
         }
