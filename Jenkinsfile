@@ -17,7 +17,7 @@ pipeline {
         SSH_CREDS_ID    = 'ec2-ssh-key' // ID for SSH Key to access Dev Server
         
         // Deployment Server Details
-        DEV_SERVER_IP = "98.92.203.102"
+        DEV_SERVER_IP = "44.197.171.212"
         DEV_SERVER_USER = "ubuntu"
     }
 
