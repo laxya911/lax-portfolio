@@ -6,6 +6,7 @@ import { Menu, X } from "lucide-react"
 import { ModeToggle } from "@/components/mode-toggle"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import Image from "next/image"
 
 const navItems = [
   { name: "Home", href: "#home" },
@@ -37,8 +38,18 @@ export function Navbar() {
       )}
     >
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link href="/" className="text-xl font-bold tracking-tight">
-          Laxman<span className="text-primary"> Aryal</span>
+
+
+        <Link href="/" className="flex items-center gap-2 text-xl font-bold tracking-tight">
+          <div className="relative h-8 w-8">
+            <Image 
+              src="/icon.svg" 
+              alt="Logo" 
+              fill 
+              className="object-contain" // ensure it doesn't stretch
+            />
+          </div>
+          <span>Laxman<span className="text-primary"> Aryal</span></span>
         </Link>
 
         {/* Desktop Nav */}

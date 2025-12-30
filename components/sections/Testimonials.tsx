@@ -64,6 +64,7 @@ export function Testimonials() {
                                     src={item.image} 
                                     alt={item.name}
                                     fill
+                                    sizes="48px"
                                     className="object-cover"
                                 />
                             </div>
@@ -82,7 +83,7 @@ export function Testimonials() {
                                 ))}
                             </div>
                             <p className="text-muted-foreground text-sm leading-relaxed italic">
-                                "{item.review}"
+                                &quot;{item.review}&quot;
                             </p>
                             
                             <div className="flex items-center justify-end pt-2 border-t mt-2">

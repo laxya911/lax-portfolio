@@ -3,7 +3,7 @@
 import { motion } from "framer-motion"
 import { ArrowRight, Download, Github, Linkedin, Mail, Infinity } from "lucide-react"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
+import {buttonVariants } from "@/components/ui/button"
 
 export function Hero() {
   return (
@@ -54,15 +54,19 @@ export function Hero() {
             transition={{ duration: 0.5, delay: 0.4 }}
             className="flex flex-wrap items-center justify-center gap-4"
           >
-            <Link href="#contact">
-              <Button size="lg" className="rounded-full px-8 font-semibold shadow-lg hover:shadow-primary/20 transition-all">
+            <Link 
+              href="#contact"
+              className={buttonVariants({ size: "lg", className: "rounded-full px-8 font-semibold shadow-lg hover:shadow-primary/20 transition-all" })}
+            >
                 Contact Me <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
             </Link>
-            <Link href="/resume.pdf" target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" size="lg" className="rounded-full px-8 shadow-sm">
+            <Link 
+              href="/resume.pdf" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className={buttonVariants({ variant: "outline", size: "lg", className: "rounded-full px-8 shadow-sm" })}
+            >
                 Download Resume <Download className="ml-2 h-4 w-4" />
-              </Button>
             </Link>
           </motion.div>
 

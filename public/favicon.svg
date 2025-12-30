@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <rect width="100" height="100" rx="20" fill="#ffffff"/>
+  <path d="M78 50C78 65.464 65.464 78 50 78C34.536 78 22 65.464 22 50C22 34.536 34.536 22 50 22C65.464 22 78 34.536 78 50Z" stroke="#F97316" stroke-width="8" stroke-linecap="round"/>
+  <path d="M30 50C30 38.9543 38.9543 30 50 30C61.0457 30 70 38.9543 70 50" stroke="#F97316" stroke-width="8" stroke-linecap="round"/>
+   <path d="M50 50 m -25, 0 a 25,25 0 1,0 50,0 a 25,25 0 1,0 -50,0" stroke="none" fill="none"/>
+   <!-- Infinity Loop Approximation -->
+   <path d="M30,50 C30,35 45,35 50,50 C55,65 70,65 70,50 C70,35 55,35 50,50 C45,65 30,65 30,50 Z" stroke="#F97316" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>
