@@ -14,9 +14,13 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Mail, Phone, Linkedin, CheckCircle } from "lucide-react"
+import { Mail, Phone, Linkedin, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
 import { useState } from "react"
 import Link from "next/link"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+
+// Allowed TLDs for validation
+const allowedTlds = ['com', 'dev', 'net', 'io', 'ai', 'org', 'edu', 'gov', 'in', 'us', 'uk', 'ca', 'au', 'de', 'jp', 'fr', 'br', 'sg'];
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -24,6 +28,11 @@ const formSchema = z.object({
   }),
   email: z.string().email({
     message: "Please enter a valid email address.",
+  }).refine((email) => {
+    const tld = email.split('.').pop()?.toLowerCase();
+    return tld && allowedTlds.includes(tld);
+  }, {
+    message: "Please use a valid top-level domain (e.g., .com, .net, .io, .in).",
   }),
   message: z.string().min(10, {
     message: "Message must be at least 10 characters.",
@@ -31,7 +40,8 @@ const formSchema = z.object({
 })
 
 export function Contact() {
-  const [isSubmitted, setIsSubmitted] = useState(false)
+  const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
+  const [errorMessage, setErrorMessage] = useState("")
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -42,12 +52,33 @@ export function Contact() {
     },
   })
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // Here you would typically send the data to an API
-    console.log(values)
-    setIsSubmitted(true)
-    setTimeout(() => setIsSubmitted(false), 3000)
-    form.reset()
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setStatus('submitting')
+    setErrorMessage("")
+    
+    try {
+      const response = await fetch('/contact.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to send message');
+      }
+
+      setStatus('success')
+      form.reset()
+      setTimeout(() => setStatus('idle'), 5000)
+    } catch (error: any) {
+      console.error(error);
+      setStatus('error')
+      setErrorMessage(error.message || "Something went wrong. Please try again.")
+    }
   }
 
   return (
@@ -139,11 +170,34 @@ export function Contact() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={isSubmitted}>
-                  {isSubmitted ? (
+                
+                {status === 'error' && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>
+                      {errorMessage}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {status === 'success' && (
+                  <Alert className="border-green-500 text-green-600 bg-green-50">
+                    <CheckCircle className="h-4 w-4 stroke-green-600" />
+                    <AlertTitle>Success</AlertTitle>
+                    <AlertDescription>
+                      Message sent successfully! I'll get back to you soon.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <Button type="submit" className="w-full" disabled={status === 'submitting' || status === 'success'}>
+                  {status === 'submitting' ? (
                     <>
-                      <CheckCircle className="mr-2 h-4 w-4" /> Message Sent
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...
                     </>
+                  ) : status === 'success' ? (
+                     "Message Sent"
                   ) : (
                     "Send Message"
                   )}

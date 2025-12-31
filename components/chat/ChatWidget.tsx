@@ -14,16 +14,64 @@ export function ChatWidget() {
   ])
   const [input, setInput] = React.useState("")
 
+  // Chat logic
+  const [isTyping, setIsTyping] = React.useState(false)
+
+  // Knowledge base for the bot
+  const knowledgeBase = [
+    {
+      keywords: ["hello", "hi", "hey", "greetings"],
+      response: "Hello! How can I help you today? You can ask me about my skills, projects, or how to contact me."
+    },
+    {
+       keywords: ["skill", "stack", "technology", "tech"],
+       response: "I am proficient in Next.js, React, TypeScript, Node.js, and DevOps tools like AWS, Docker, Kubernetes, Ansible, and Terraform."
+    },
+    {
+      keywords: ["project", "work", "portfolio"],
+      response: "You can view my projects in the 'Projects' section of this portfolio. I have worked on various web applications and infrastructure automation projects."
+    },
+    {
+      keywords: ["contact", "email", "hire", "reach"],
+      response: "You can reach me via the contact form on this page, or email me directly at laxuaryal@gmail.com."
+    },
+    {
+      keywords: ["experience", "background", "job"],
+      response: "I have experience in both Full Stack Development and DevOps. I love building scalable applications and automating infrastructure."
+    },
+    {
+      keywords: ["service", "offer"],
+      response: "I offer services in Web Development (Next.js/React), Backend (Node.js/Python), and DevOps (AWS/CICD/IaC)."
+    }
+  ]
+
+  const getResponse = (input: string) => {
+    const lowerInput = input.toLowerCase()
+    
+    // Find matching intent
+    const match = knowledgeBase.find(item => 
+      item.keywords.some(keyword => lowerInput.includes(keyword))
+    )
+
+    if (match) return match.response
+    
+    return "I'm not sure about that. Please try asking about my skills, projects, or contact info. You can also use the contact form for specific inquiries."
+  }
+
   const handleSend = () => {
     if (!input.trim()) return
-    setMessages([...messages, { role: 'user', content: input }])
     
-    // Simulate reponse
-    setTimeout(() => {
-        setMessages(prev => [...prev, { role: 'assistant', content: "Thank you for your message! This is a demo assistant. Laxman will get back to you if you use the contact form." }])
-    }, 1000)
-    
+    const userMessage = input
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }])
     setInput("")
+    setIsTyping(true)
+    
+    // Simulate thinking and response time
+    setTimeout(() => {
+        const response = getResponse(userMessage)
+        setMessages(prev => [...prev, { role: 'assistant', content: response }])
+        setIsTyping(false)
+    }, 1000)
   }
 
   return (
@@ -65,17 +113,26 @@ export function ChatWidget() {
                   </Button>
                 </CardHeader>
                 <CardContent className="h-[350px] overflow-y-auto p-4 space-y-4">
-                    {messages.map((msg, i) => (
-                        <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
-                                msg.role === 'user' 
-                                ? 'bg-primary text-primary-foreground rounded-br-none' 
-                                : 'bg-muted rounded-bl-none'
-                            }`}>
-                                {msg.content}
-                            </div>
-                        </div>
-                    ))}
+            {messages.map((msg, i) => (
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
+                        msg.role === 'user' 
+                        ? 'bg-primary text-primary-foreground rounded-br-none' 
+                        : 'bg-muted rounded-bl-none'
+                    }`}>
+                        {msg.content}
+                    </div>
+                </div>
+            ))}
+            {isTyping && (
+                <div className="flex justify-start">
+                    <div className="bg-muted rounded-2xl rounded-bl-none px-4 py-2 text-sm flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                        <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                        <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce"></span>
+                    </div>
+                </div>
+            )}
                 </CardContent>
                 <CardFooter className="p-3 pt-0">
                     <form 
